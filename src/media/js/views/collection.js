@@ -14,6 +14,12 @@ define('views/collection',
         $('ul.apps').sortable({handle: '.handle'});
     }
 
+    function update_visibility_toggle(data) {
+        if (data.is_visible) {
+            $('.toggle-visible').removeClass('invisible');
+        }
+    }
+
     z.page.on('click', 'a.add_app', function(e) {
         e.preventDefault();
         $('.dialog').addClass('hidden');
@@ -188,6 +194,47 @@ define('views/collection',
         }).fail(function() {
             notification.notification({message: gettext('Failed to update collection order. Try refreshing the page.')});
         });
+    }).on('click', '.toggle-visible', function(e) {
+        // TODO: Spinner for 'saving'.
+        var collection = get_collection();
+        var $this = $(this);
+        var successMsg = gettext('Collection is now visible.')
+        e.preventDefault();
+
+        var data = {is_visible: false};
+
+        $this.addClass('saving');
+
+        if ($this.hasClass('invisible')) { // Make collection visible.
+            data.is_visible = true;
+        } else { // Make collection invisible.
+            successMsg = gettext('Collection is now invisible.');
+        }
+
+        requests.patch(
+            urls.api.url('collection', collection.id),
+            data
+        ).done(function() {
+            if (data.is_visible) {
+                $this.removeClass('invisible');
+                $this.text(
+                    $this.text().replace(gettext('Make Collection Visible'),
+                        gettext('Make Collection Invisible'))
+                );
+            } else {
+                $this.addClass('invisible');
+                $this.text(
+                    $this.text().replace(gettext('Make Collection Invisible'),
+                        gettext('Make Collection Visible'))
+                );
+            }
+            notification.notification({message: successMsg});
+        }).fail(function() {
+            notification.notification(
+                {message: gettext('Collection visibility toggle failed')});
+        }).always(function() {
+            $this.removeClass('saving');
+        });
     });
 
     // Code to update fields as they're edited by the user.
@@ -284,6 +331,8 @@ define('views/collection',
             if (data.region) {
                 apply_incompat(data.region, data.apps);
             }
+
+            update_visibility_toggle(data);
         });
 
         builder.z('type', 'leaf');

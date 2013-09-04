@@ -137,3 +137,13 @@ ul.apps {
 a.delete_collection {
     color: #b00;
 }
+
+.toggle-public {
+    color: #938787;
+    &.nonpublic {
+        color: green;
+    }
+    &.saving b {
+        animation(unquote('0.9s spin infinite steps(30)'));
+    }
+}

@@ -14,6 +14,12 @@ define('views/collection',
         $('ul.apps').sortable({handle: '.handle'});
     }
 
+    function update_public_toggle(data) {
+        if (data.is_public) {
+            $('.toggle-public').removeClass('nonpublic');
+        }
+    }
+
     z.page.on('click', 'a.add_app', function(e) {
         e.preventDefault();
         $('.dialog').addClass('hidden');
@@ -188,6 +194,47 @@ define('views/collection',
         }).fail(function() {
             notification.notification({message: gettext('Failed to update collection order. Try refreshing the page.')});
         });
+    }).on('click', '.toggle-public', function(e) {
+        // TODO: Spinner for 'saving'.
+        e.preventDefault();
+        var collection = get_collection();
+        var $this = $(this);
+        var successMsg = gettext('Collection is now public.')
+
+        var data = {is_public: false};
+
+        $this.addClass('saving');
+
+        if ($this.hasClass('nonpublic')) { // Make collection public.
+            data.is_public = true;
+        } else { // Make collection hidden.
+            successMsg = gettext('Collection is now hidden.');
+        }
+
+        requests.patch(
+            urls.api.url('collection', collection.id),
+            data
+        ).done(function() {
+            if (data.is_public) {
+                $this.removeClass('nonpublic');
+                $this.text(
+                    $this.text().replace(gettext('Make Collection Public'),
+                        gettext('Make Collection Hidden'))
+                );
+            } else {
+                $this.addClass('nonpublic');
+                $this.text(
+                    $this.text().replace(gettext('Make Collection Hidden'),
+                        gettext('Make Collection Public'))
+                );
+            }
+            notification.notification({message: successMsg});
+        }).fail(function() {
+            notification.notification(
+                {message: gettext('Setting collection public property failed')});
+        }).always(function() {
+            $this.removeClass('saving');
+        });
     });
 
     // Code to update fields as they're edited by the user.
@@ -207,7 +254,7 @@ define('views/collection',
             case 'category':
                 // Look up the name of the new value and update the field.
                 var model = models(field).lookup(data[field], 'slug');
-                data[field] = model ? model.id : '';  // Region/carrier/cat only accept IDs for now.
+                data[field] = model.id;  // Region/carrier/cat only accept IDs for now.
                 $label.text(model && model.name ||
                             (field === 'category' ?
                              gettext('All Categories (Homepage)') : '--'));
@@ -284,6 +331,8 @@ define('views/collection',
             if (data.region) {
                 apply_incompat(data.region, data.apps);
             }
+
+            update_public_toggle(data);
         });
 
         builder.z('type', 'leaf');

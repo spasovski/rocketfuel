@@ -26,6 +26,7 @@ def update():
     with lcd(ROCKETFUEL):
         local('npm install')
         local('npm install -g commonplace')
+        local('make pre_includes')
         local('commonplace includes')
 
 
